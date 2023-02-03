@@ -1,19 +1,18 @@
 import numpy as np
 from maddpg import MADDPG
-from utils import plot_learning_curve, save_frames_as_gif
+from utils import plot_learning_curve, plot_loss_curves, save_frames_as_gif
 from config import *
 import pettingzoo.mpe as mpe
 
 
 if __name__ == '__main__':
     
-    env = mpe.simple_spread_v2.parallel_env(N=3, local_ratio=0.5, max_cycles=25, continuous_actions=True)
-    #env = mpe.simple_adversary_v2.parallel_env(N=2, max_cycles=25, continuous_actions=True, render_mode='rgb_array')
+    #env = mpe.simple_spread_v2.parallel_env(N=3, local_ratio=0.5, max_cycles=25, continuous_actions=True)
+    env = mpe.simple_adversary_v2.parallel_env(N=2, max_cycles=25, continuous_actions=True)
     obs = env.reset()
     agents_env = env.agents
 
-    best_score, avg_score, n_steps = -np.inf,-np.inf, 0
-    score_history = np.empty((len(agents_env), N_GAMES))
+    best_score, n_steps = -np.inf, 0
     actors_shape = []
     n_actions = []
    
@@ -32,39 +31,45 @@ if __name__ == '__main__':
         while not any(done.values()):
 
             actions = agents.choose_action(obs,agents_env)
-            obs_, reward, done, truncated, info = env.step(actions)
+            if actions is not None:
+                
+                obs_, reward, done, truncated, info = env.step(actions)
             
-            #append score for each agent
-            for agent in agents_env:
-                score[agent] += reward[agent]
-            #store transition
-            agents.store_transition(obs, actions, obs_, reward, done)
+                #append score for each agent
+                for agent in agents_env:
+                    score[agent] += reward[agent]
+                #store transition
+                agents.store_transition(obs, actions, obs_, reward, done)
+                
+                #new obs is now the current
+                obs = obs_
+                n_steps += 1
+                #if truncated, end episode
+                if any(truncated.values()):
+                    done.update((a, True) for a in done)
 
             #update network parameters every 100 steps, except for the frist 1024 steps
             if n_steps % UPDATE_EVERY == 0:
-                agents.learn()
+                critic_loss, actors_loss = agents.learn()
+                CRITIC_LOSS.append(critic_loss)
+                ACTORS_LOSS.append(actors_loss)
+                UPDATE_EPISODES.append(i)
 
-            #new obs is now the current
-            obs = obs_
-            n_steps += 1
-            #if truncated, end episode
-            if any(truncated.values()):
-                done.update((a, True) for a in done)
+
+
             
 
         #end of each game
-        for agent_id, agent_title in enumerate(agents_env):
-            score_history[agent_id][i] = score[agent_title]
-            #score_history.append(score[agent_title])
-        score_history[score_history == 0] = np.nan
-        avg_score = np.nanmean(score_history[-100:])
+        SCORES_HISTORY.append(score[agents_env[0]])
+        AVG_SCORE = np.mean(SCORES_HISTORY[-100:])
 
-        if avg_score > best_score:
-            best_score = avg_score
+        if AVG_SCORE > best_score:
+            best_score = AVG_SCORE
             agents.save_checkpoint()
 
-        print('episode ', i, 'score ', score, 'avg score %.1f' % avg_score)
+        print('episode ', i, 'score ', score, 'avg score %.1f' % AVG_SCORE)
     
-
-    x = [i+1 for i in range(N_GAMES)]
-    plot_learning_curve(x, score_history[0], FIGURE_FILE)
+    plot_learning_curve()
+    # x = [i+1 for i in range(N_GAMES)]
+    # plot_learning_curve(x, SCORES_HISTORY, FIGURE_FILE)s
+    # plot_loss_curves(CRITIC_LOSS, ACTORS_LOSS, FIGURE_FILE2)

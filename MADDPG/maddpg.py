@@ -61,7 +61,7 @@ class MADDPG:
     def learn(self):
 
         if self.memory.mem_cntr < BATCH_SIZE:
-            return
+            return 0, 0
 
         critic_obs, critic_obs_, obs_np, obs_np_, rewards, actions_np, dones = self.memory.sample_buffer()
 
@@ -104,8 +104,8 @@ class MADDPG:
             for agent_id, agent_title in enumerate(self.agents_env):  
                 pi.append(self.agents[agent_id].actor(obs[agent_id]))
             pi = tf.concat(pi, axis=1)
-            actors_loss = -self.critic_agent.critic(critic_obs, pi)
-            actors_loss = tf.math.reduce_mean(actors_loss)
+            actors_loss = self.critic_agent.critic(critic_obs, pi)
+            actors_loss = -tf.math.reduce_mean(actors_loss)
 
         for agent_id, agent_title in enumerate(self.agents_env):  
             actor_network_gradient = tape2.gradient(actors_loss, self.agents[agent_id].actor.trainable_variables)
@@ -115,7 +115,7 @@ class MADDPG:
         del tape2
         self.update_network_parameters(tau=TAU)
 
-
+        return critic_loss.numpy(), actors_loss.numpy()
 
 
 class ActorAgents:
