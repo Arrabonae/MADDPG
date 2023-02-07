@@ -77,7 +77,7 @@ class ReplayBuffer:
         critic_obs = self.critic_obs_memory[batch]
         critic_obs_ = self.critic_new_obs_memory[batch]
 
-        #Actor sample``
+        #Actor sample
         obs = []
         obs_ = []
         actions = []
@@ -85,8 +85,5 @@ class ReplayBuffer:
             obs.append(self.actor_obs_memory[agent_id][batch])
             obs_.append(self.actor_new_obs_memory[agent_id][batch])
             actions.append(self.actor_action_memory[agent_id][batch])
-        # obs = self.actor_obs_memory[:][batch]
-        # obs_ = self.actor_new_obs_memory[:][batch]
-        # actions = self.actor_action_memory[:][batch]
 
         return critic_obs, critic_obs_, obs, obs_, rewards, actions, dones

@@ -48,10 +48,6 @@ class MADDPG:
     def choose_action(self, obs, agents):
         #enironment takes parrallel actions, so we need to return a list of actions for each agent in the environment
         #return such that [[agent_0_actions], [agent_1_actions], ...]
-        # actions = []
-        # for agent_id, agent_title in enumerate(self.agents_env):
-        #     action = self.agents[agent_id].choose_action(obs[agent_title])
-        #     actions.append(action)
         actions = {}
         for agent_id, agent_title in enumerate(agents):
             actions[agent_title] = self.agents[agent_id].choose_action(obs[agent_title])
@@ -79,23 +75,24 @@ class MADDPG:
         rewards = tf.convert_to_tensor(rewards, dtype=tf.float32)
         dones = tf.convert_to_tensor(dones, dtype=tf.float32)
 
-        target_pi = []
+        new_pi = []
         pi = []
         target = []
         critic_loss = []
 
         with tf.GradientTape() as tape:
             for agent_id, agent_title in enumerate(self.agents_env):
-                target_pi.append(self.agents[agent_id].target_actor(obs_[agent_id]))
+                new_pi.append(self.agents[agent_id].target_actor(obs_[agent_id]))
             old_actions = tf.concat(actions, axis=1)
-            new_actions = tf.concat(target_pi, axis=1)
-            critic_value_obs_ = tf.squeeze(self.critic_agent.target_critic(critic_obs_, new_actions), 1)
-            critic_value_obs = tf.squeeze(self.critic_agent.critic(critic_obs, old_actions), 1)
+            new_actions = tf.concat(new_pi, axis=1)
+            critic_value_ = tf.squeeze(self.critic_agent.target_critic(critic_obs_, new_actions), 1)
+            critic_value = tf.squeeze(self.critic_agent.critic(critic_obs, old_actions), 1)
 
             for agent_id, agent_title in enumerate(self.agents_env):
-                target.append(rewards[:, agent_id, None] + self.gamma * critic_value_obs_ * (1 - dones[:, agent_id, None]))
-            target_ = tf.reduce_sum(target, axis=0)
-            critic_loss = tf.reduce_mean(keras.losses.MSE(target_, critic_value_obs))
+                target.append(rewards[:, agent_id] + self.gamma * critic_value_ * (1 - dones[:, agent_id]))
+            target = tf.reduce_mean(target, axis=0)
+            critic_loss = keras.losses.huber(target, critic_value, delta=1.0)
+
 
         critic_network_gradient = tape.gradient(critic_loss, self.critic_agent.critic.trainable_variables)
         self.critic_agent.critic.optimizer.apply_gradients(zip(critic_network_gradient, self.critic_agent.critic.trainable_variables))
@@ -103,9 +100,11 @@ class MADDPG:
         with tf.GradientTape(persistent= True) as tape2:
             for agent_id, agent_title in enumerate(self.agents_env):  
                 pi.append(self.agents[agent_id].actor(obs[agent_id]))
+
             pi = tf.concat(pi, axis=1)
-            actors_loss = self.critic_agent.critic(critic_obs, pi)
-            actors_loss = -tf.math.reduce_mean(actors_loss)
+            actors_loss = tf.squeeze(self.critic_agent.critic(critic_obs, pi),1)
+            #actors_loss = tf.math.l2_normalize(actors_loss, axis=0)
+            actors_loss = -tf.reduce_mean(actors_loss, axis=0)
 
         for agent_id, agent_title in enumerate(self.agents_env):  
             actor_network_gradient = tape2.gradient(actors_loss, self.agents[agent_id].actor.trainable_variables)
@@ -125,7 +124,7 @@ class ActorAgents:
         #for action selection: clipping / sclaing the action to be between low and high
         self.actions_low = actions_low
         self.actions_high = actions_high
-        self.noise = 0.1
+        self.noise = NOISE
 
         self.actor = ActorNetwork(n_actions=n_actions, name=agent_title + 'actor')
         self.target_actor = ActorNetwork(n_actions=n_actions, name= agent_title+ 'target_actor')
