@@ -18,6 +18,8 @@ class MADDPG:
         #for each action type
         self.n_actions = n_actions
         self.gamma = GAMMA
+        self.actor_shape = actors_shape
+        self.critic_shape = critic_shape
         self.memory = ReplayBuffer(MEMORY_SIZE, actors_shape, critic_shape, self.agents_env, n_actions, BATCH_SIZE)
 
         for agent_id, agent_title in enumerate(self.agents_env):
@@ -36,9 +38,9 @@ class MADDPG:
 
     def load_checkpoint(self):
         print('... loading checkpoint ...')
-        for agent in self.agents:
+        for idx, agent in enumerate(self.agents):
             agent.load_models()
-        self.critic_agent.load_models()
+        #self.critic_agent.load_models()
 
     def update_network_parameters(self, tau):
         for agent in self.agents:
@@ -85,8 +87,8 @@ class MADDPG:
                 new_pi.append(self.agents[agent_id].target_actor(obs_[agent_id]))
             old_actions = tf.concat(actions, axis=1)
             new_actions = tf.concat(new_pi, axis=1)
-            critic_value_ = tf.squeeze(self.critic_agent.target_critic(critic_obs_, new_actions), 1)
-            critic_value = tf.squeeze(self.critic_agent.critic(critic_obs, old_actions), 1)
+            critic_value_ = tf.squeeze(self.critic_agent.target_critic((critic_obs_, new_actions)), 1)
+            critic_value = tf.squeeze(self.critic_agent.critic((critic_obs, old_actions)), 1)
 
             for agent_id, agent_title in enumerate(self.agents_env):
                 target.append(rewards[:, agent_id] + self.gamma * critic_value_ * (1 - dones[:, agent_id]))
@@ -102,7 +104,7 @@ class MADDPG:
                 pi.append(self.agents[agent_id].actor(obs[agent_id]))
 
             pi = tf.concat(pi, axis=1)
-            actors_loss = tf.squeeze(self.critic_agent.critic(critic_obs, pi),1)
+            actors_loss = tf.squeeze(self.critic_agent.critic((critic_obs, pi)),1)
             #actors_loss = tf.math.l2_normalize(actors_loss, axis=0)
             actors_loss = -tf.reduce_mean(actors_loss, axis=0)
 
@@ -156,15 +158,18 @@ class ActorAgents:
 
     def save_models(self):
         print('... saving {}  models ...' .format(self.actor.model_name))
-        self.actor.save_weights(self.actor.checkpoint_file)
+        self.actor.save_weights(self.actor.checkpoint_file, save_format='h5')
         print('... saving {}  models ...' .format(self.target_actor.model_name))
-        self.target_actor.save_weights(self.target_actor.checkpoint_file)
+        self.target_actor.save_weights(self.target_actor.checkpoint_file, save_format='h5')
 
 
     def load_models(self):
         print('... loading {}  models ...'.format(self.actor.model_name))
+        self.actor.build((BATCH_SIZE, 18))
         self.actor.load_weights(self.actor.checkpoint_file)
         print('... loading {}  models ...' .format(self.target_actor.model_name))
+        #self.update_network_parameters(TAU)
+        self.target_actor.build((BATCH_SIZE, 18))
         self.target_actor.load_weights(self.target_actor.checkpoint_file)
 
 
@@ -191,14 +196,15 @@ class CriticAgent():
 
     def save_models(self):
         print('... saving {} models ...'.format(self.critic.model_name))
-        self.critic.save_weights(self.critic.checkpoint_file)
+        self.critic.save_weights(self.critic.checkpoint_file, save_format='h5')
         print('... saving {} models ...'.format(self.target_critic.model_name))
-        self.target_critic.save_weights(self.target_critic.checkpoint_file)
+        self.target_critic.save_weights(self.target_critic.checkpoint_file, save_format='h5')
 
     def load_models(self):
         print('... loading {} models ...'.format(self.critic.model_name))
         self.critic.load_weights(self.critic.checkpoint_file)
-        print('... loading {} models ...'.format(self.target_critic.model_name))
-        self.target_critic.load_weights(self.target_critic.checkpoint_file)
+        #print('... loading {} models ...'.format(self.target_critic.model_name))
+        self.update_network_parameters(TAU)
+        #self.target_critic.load_weights(self.target_critic.checkpoint_file)
 
    

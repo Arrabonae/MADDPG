@@ -26,7 +26,7 @@ if __name__ == '__main__':
                     actors_shape, critic_shape, ALPHA, BETA)
 
     if LOAD_CHECKPOINT:
-        agents.load_models()
+        agents.load_checkpoint()
 
     for i in range(N_GAMES):
         obs = env.reset()
@@ -61,20 +61,23 @@ if __name__ == '__main__':
                     done.update((a, True) for a in done)
 
             #update network parameters every 100 steps, except for the first 1024 steps
-            if n_steps % UPDATE_EVERY == 0 and not LOAD_CHECKPOINT:
+            if n_steps % UPDATE_EVERY == 0 and n_steps > BATCH_SIZE and not LOAD_CHECKPOINT:
                 critic_loss, actors_loss = agents.learn()
                 CRITIC_LOSS.append(critic_loss)
                 ACTORS_LOSS.append(actors_loss)
                 UPDATE_EPISODES.append(i)
+                #agents.load_checkpoint()
 
         #end of each game
         s = score[agents_env[0]] + score[agents_env[1]] + score[agents_env[2]]
         SCORES_HISTORY.append(s)
         AVG_SCORE = np.mean(SCORES_HISTORY[-100:])
 
-        if AVG_SCORE > best_score and not LOAD_CHECKPOINT:
+        if AVG_SCORE > best_score:
             best_score = AVG_SCORE
-            agents.save_checkpoint()
+            if not LOAD_CHECKPOINT:
+                agents.save_checkpoint()
+    
 
         print('episode ', i, 'avg score MADDPG %.1f ' % AVG_SCORE, 'best score so far %.1f ' %best_score)
         print('episode ', i, 'team episode mean score ', s)

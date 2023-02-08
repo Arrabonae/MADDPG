@@ -16,16 +16,17 @@ class CriticNetwork(keras.Model):
         self.model_name = name
         self.checkpoint_dir = CHECKPOINT_DIR
         self.checkpoint_file = os.path.join(self.checkpoint_dir, 
-                    self.model_name+'_MADDPG.h5')
+                    self.model_name+'_MADDPG')
 
         self.fc1 = Dense(self.critic_dense1, activation=CRITIC_ACTIVATION_HIDDEN, kernel_initializer=WEIGHT_INIT, bias_initializer=BIAS_INIT)
         self.fc2 = Dense(self.critic_dense2, activation=CRITIC_ACTIVATION_HIDDEN, kernel_initializer=WEIGHT_INIT, bias_initializer=BIAS_INIT)
         self.q = Dense(1, activation=CRITIC_ACTIVATION_OUTPUT, kernel_initializer=WEIGHT_INIT, bias_initializer=BIAS_INIT)
 
-    def call(self, state, action):
+    def call(self, inputs):
         """
         Centralised Critic takes the all the states from each Agent and corresponding actions from each Agent and gives a Q value
         """
+        state, action = inputs
         q_network = self.fc1(tf.concat([state, action], axis=1))
         q_network = self.fc2(q_network)
 
@@ -45,7 +46,7 @@ class ActorNetwork(keras.Model):
         self.model_name = name
         self.checkpoint_dir = CHECKPOINT_DIR
         self.checkpoint_file = os.path.join(self.checkpoint_dir, 
-                    self.model_name+'_MADDPG.h5')
+                    self.model_name+'_MADDPG')
 
         self.fc1 = Dense(self.actors_dense1, activation=ACTORS_ACTIVATION_HIDDEN, kernel_initializer=WEIGHT_INIT, bias_initializer=BIAS_INIT)
         self.fc2 = Dense(self.actors_dense2, activation=ACTORS_ACTIVATION_HIDDEN, kernel_initializer=WEIGHT_INIT, bias_initializer=BIAS_INIT)
