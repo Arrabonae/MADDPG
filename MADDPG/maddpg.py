@@ -1,9 +1,11 @@
+import numpy as np
 import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.keras.optimizers import Adam
 from networks import ActorNetwork, CriticNetwork
 from config import *
 from buffer import ReplayBuffer
+from utils import OrnsteinUhlenbeckActionNoise
 
 
 class MADDPG:
@@ -93,7 +95,8 @@ class MADDPG:
             for agent_id, agent_title in enumerate(self.agents_env):
                 target.append(rewards[:, agent_id] + self.gamma * critic_value_ * (1 - dones[:, agent_id]))
             target = tf.reduce_mean(target, axis=0)
-            critic_loss = keras.losses.huber(target, critic_value, delta=1.0)
+            #critic_loss = keras.losses.huber(target, critic_value, delta=1.0)
+            critic_loss = keras.losses.MSE(target, critic_value)
 
 
         critic_network_gradient = tape.gradient(critic_loss, self.critic_agent.critic.trainable_variables)
@@ -104,9 +107,9 @@ class MADDPG:
                 pi.append(self.agents[agent_id].actor(obs[agent_id]))
 
             pi = tf.concat(pi, axis=1)
-            actors_loss = tf.squeeze(self.critic_agent.critic((critic_obs, pi)),1)
+            actors_loss = -tf.squeeze(self.critic_agent.critic((critic_obs, pi)),1)
             #actors_loss = tf.math.l2_normalize(actors_loss, axis=0)
-            actors_loss = -tf.reduce_mean(actors_loss, axis=0)
+            actors_loss = tf.reduce_mean(actors_loss, axis=0)
 
         for agent_id, agent_title in enumerate(self.agents_env):  
             actor_network_gradient = tape2.gradient(actors_loss, self.agents[agent_id].actor.trainable_variables)
@@ -114,7 +117,7 @@ class MADDPG:
 
 
         del tape2
-        self.update_network_parameters(tau=TAU)
+        self.update_network_parameters(TAU) 
 
         return critic_loss.numpy(), actors_loss.numpy()
 
@@ -126,7 +129,7 @@ class ActorAgents:
         #for action selection: clipping / sclaing the action to be between low and high
         self.actions_low = actions_low
         self.actions_high = actions_high
-        self.noise = NOISE
+        self.noise = OrnsteinUhlenbeckActionNoise(mu= np.zeros(self.n_actions))
 
         self.actor = ActorNetwork(n_actions=n_actions, name=agent_title + 'actor')
         self.target_actor = ActorNetwork(n_actions=n_actions, name= agent_title+ 'target_actor')
@@ -149,12 +152,10 @@ class ActorAgents:
     def choose_action(self, obs):
         state = tf.convert_to_tensor([obs], dtype=tf.float32)
         actions = self.actor(state)
-
-        actions += tf.random.normal(shape=[self.n_actions], mean=0.0, stddev=self.noise)
-        # note that if the env has an action > 1, we have to multiply by
-        # max action at some point
+        actions += tf.convert_to_tensor(self.noise(), dtype=tf.float32)
         actions = tf.clip_by_value(actions, self.actions_low, self.actions_high)
         return actions[0].numpy()
+        #return tf.argmax(actions[0]).numpy()
 
     def save_models(self):
         print('... saving {}  models ...' .format(self.actor.model_name))
@@ -168,7 +169,6 @@ class ActorAgents:
         self.actor.build((BATCH_SIZE, 18))
         self.actor.load_weights(self.actor.checkpoint_file)
         print('... loading {}  models ...' .format(self.target_actor.model_name))
-        #self.update_network_parameters(TAU)
         self.target_actor.build((BATCH_SIZE, 18))
         self.target_actor.load_weights(self.target_actor.checkpoint_file)
 

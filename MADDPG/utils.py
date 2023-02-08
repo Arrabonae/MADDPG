@@ -18,8 +18,8 @@ def plot_learning_curve():
     plt.clf()
 
     fig, ax2 = plt.subplots()
-    ax2.plot(UPDATE_EPISODES, CRITIC_LOSS, label='Critic loss Team 1', color='blue')
-    ax2.plot(UPDATE_EPISODES, ACTORS_LOSS, label='Actor loss Team 1', color='green')
+    ax2.plot(UPDATE_EPISODES, CRITIC_LOSS, label='Critic loss', color='blue')
+    ax2.plot(UPDATE_EPISODES, ACTORS_LOSS, label='Actor loss', color='green')
 
     ax2.set_ylabel("Loss")
     ax2.legend()
@@ -28,3 +28,23 @@ def plot_learning_curve():
     file = open("score.txt", 'w+')
     file.write(str(SCORES_HISTORY))
     file.close()
+
+
+class OrnsteinUhlenbeckActionNoise():
+    def __init__(self, mu):
+        self.theta = THETA
+        self.mu = mu
+        self.sigma = SIGMA
+        self.dt = DT
+        self.x0 = X0
+        self.reset()
+
+    def __call__(self):
+        x = self.x_prev + self.theta * (self.mu - self.x_prev) * self.dt + \
+                self.sigma * np.sqrt(self.dt) * np.random.normal(size=self.mu.shape)
+        self.x_prev = x
+
+        return x
+
+    def reset(self):
+        self.x_prev = self.x0 if self.x0 is not None else np.zeros_like(self.mu)

@@ -8,7 +8,8 @@ import time
 
 if __name__ == '__main__':
     
-    env = mpe.simple_spread_v2.parallel_env(N=3, local_ratio=0.5, max_cycles=25, continuous_actions=True)
+    #env = mpe.simple_spread_v2.parallel_env(N=3, local_ratio=0.5, max_cycles=25, continuous_actions=True)
+    env = mpe.simple_v2.parallel_env(max_cycles=25, continuous_actions=True)
     obs = env.reset()
     agents_env = env.agents
     best_score, n_steps = -np.inf, 0
@@ -17,6 +18,7 @@ if __name__ == '__main__':
     n_actions = []
     for agent in agents_env:
         actors_shape.append(env.observation_space(agent).shape[0])
+        #n_actions.append(env.action_space(agent).n)
         n_actions.append(env.action_space(agent).shape[0])
     critic_shape = sum(actors_shape)
     
@@ -24,6 +26,12 @@ if __name__ == '__main__':
                     env.action_space(agents_env[0]).low[0], 
                     env.action_space(agents_env[0]).high[0], 
                     actors_shape, critic_shape, ALPHA, BETA)
+    # agents = MADDPG(agents_env, n_actions, 
+    #                 None, 
+    #                 None, 
+    #                 actors_shape, critic_shape, ALPHA, BETA)
+
+
 
     if LOAD_CHECKPOINT:
         agents.load_checkpoint()
@@ -40,18 +48,13 @@ if __name__ == '__main__':
             actions = agents.choose_action(obs,agents_env)
             if actions is not None:
                 obs_, reward, done, truncated, info = env.step(actions)
-            
                 #append score for each agent
                 for agent in agents_env:
                     s = (score[agent] + reward[agent])/2
                     score[agent] = s
                 #store transition
                 if not LOAD_CHECKPOINT:
-                    agents.store_transition({key: obs[key] for key in agents_env},
-                                                {key: actions[key] for key in agents_env},
-                                                {key: obs_[key] for key in agents_env},
-                                                {key: reward[key] for key in agents_env},
-                                                {key: done[key] for key in agents_env})
+                    agents.store_transition(obs, actions, obs_, reward, done)
 
                 #new obs is now the current
                 obs = obs_
@@ -69,7 +72,7 @@ if __name__ == '__main__':
                 #agents.load_checkpoint()
 
         #end of each game
-        s = score[agents_env[0]] + score[agents_env[1]] + score[agents_env[2]]
+        s = score[agents_env[0]]# + score[agents_env[1]] + score[agents_env[2]]
         SCORES_HISTORY.append(s)
         AVG_SCORE = np.mean(SCORES_HISTORY[-100:])
 
