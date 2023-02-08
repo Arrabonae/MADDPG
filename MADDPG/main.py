@@ -8,8 +8,8 @@ import time
 
 if __name__ == '__main__':
     
-    #env = mpe.simple_spread_v2.parallel_env(N=3, local_ratio=0.5, max_cycles=25, continuous_actions=True)
-    env = mpe.simple_v2.parallel_env(max_cycles=25, continuous_actions=True)
+    env = mpe.simple_spread_v2.parallel_env(N=3, local_ratio=0.5, max_cycles=25, continuous_actions=True)
+    #env = mpe.simple_v2.parallel_env(max_cycles=25, continuous_actions=True)
     obs = env.reset()
     agents_env = env.agents
     best_score, n_steps = -np.inf, 0
@@ -39,7 +39,7 @@ if __name__ == '__main__':
     for i in range(N_GAMES):
         obs = env.reset()
         done = dict(zip(agents_env, [False]*len(agents_env)))
-        score = dict(zip(agents_env, [0]*len(agents_env)))
+        score = dict(zip(agents_env, [[0]]*len(agents_env)))
         while not any(done.values()):
             if LOAD_CHECKPOINT:
                 env.render()
@@ -50,8 +50,8 @@ if __name__ == '__main__':
                 obs_, reward, done, truncated, info = env.step(actions)
                 #append score for each agent
                 for agent in agents_env:
-                    s = (score[agent] + reward[agent])/2
-                    score[agent] = s
+                    #s = (score[agent] + reward[agent])/2
+                    score[agent].append(reward[agent])
                 #store transition
                 if not LOAD_CHECKPOINT:
                     agents.store_transition(obs, actions, obs_, reward, done)
@@ -72,17 +72,20 @@ if __name__ == '__main__':
                 #agents.load_checkpoint()
 
         #end of each game
-        s = score[agents_env[0]]# + score[agents_env[1]] + score[agents_env[2]]
-        SCORES_HISTORY.append(s)
+        last_scores = []
+        for a in agents_env:
+            last_scores.append(score[a][-5:])
+        s = score[agents_env[0]] + score[agents_env[1]] + score[agents_env[2]]
+        SCORES_HISTORY.append(np.mean(s))
         AVG_SCORE = np.mean(SCORES_HISTORY[-100:])
 
         if AVG_SCORE > best_score:
             best_score = AVG_SCORE
-            if not LOAD_CHECKPOINT:
+            if not LOAD_CHECKPOINT and n_steps > BATCH_SIZE:
                 agents.save_checkpoint()
     
 
         print('episode ', i, 'avg score MADDPG %.1f ' % AVG_SCORE, 'best score so far %.1f ' %best_score)
-        print('episode ', i, 'team episode mean score ', s)
+        print('episode ', i, 'team episode last scores ', np.mean(last_scores))
 
     plot_learning_curve()

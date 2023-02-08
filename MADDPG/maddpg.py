@@ -95,7 +95,6 @@ class MADDPG:
             for agent_id, agent_title in enumerate(self.agents_env):
                 target.append(rewards[:, agent_id] + self.gamma * critic_value_ * (1 - dones[:, agent_id]))
             target = tf.reduce_mean(target, axis=0)
-            #critic_loss = keras.losses.huber(target, critic_value, delta=1.0)
             critic_loss = keras.losses.MSE(target, critic_value)
 
 
@@ -108,7 +107,6 @@ class MADDPG:
 
             pi = tf.concat(pi, axis=1)
             actors_loss = -tf.squeeze(self.critic_agent.critic((critic_obs, pi)),1)
-            #actors_loss = tf.math.l2_normalize(actors_loss, axis=0)
             actors_loss = tf.reduce_mean(actors_loss, axis=0)
 
         for agent_id, agent_title in enumerate(self.agents_env):  
@@ -134,8 +132,8 @@ class ActorAgents:
         self.actor = ActorNetwork(n_actions=n_actions, name=agent_title + 'actor')
         self.target_actor = ActorNetwork(n_actions=n_actions, name= agent_title+ 'target_actor')
 
-        self.actor.compile(optimizer=Adam(learning_rate=alpha))
-        self.target_actor.compile(optimizer=Adam(learning_rate=alpha))
+        self.actor.compile(optimizer=Adam(learning_rate=alpha, clipnorm=1))
+        self.target_actor.compile(optimizer=Adam(learning_rate=alpha, clipnorm=1))
 
         self.update_network_parameters(tau=1)
 
@@ -179,8 +177,8 @@ class CriticAgent():
         self.critic = CriticNetwork(name='Centralised critic')
         self.target_critic = CriticNetwork(name='Centralised target_critic')
 
-        self.critic.compile(optimizer=Adam(learning_rate=beta))
-        self.target_critic.compile(optimizer=Adam(learning_rate=beta))
+        self.critic.compile(optimizer=Adam(learning_rate=beta, clipnorm=1))
+        self.target_critic.compile(optimizer=Adam(learning_rate=beta, clipnorm=1))
 
         self.update_network_parameters(tau=1)
 
