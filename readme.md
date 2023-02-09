@@ -2,7 +2,7 @@
 
 
 **Trained Agents**
-![](plots/trained_agents.png)<br/>
+![](plots/trained_agents.gif)<br/>
 
 
 ## Pettingzoo MPE environment for multi-agent RL
