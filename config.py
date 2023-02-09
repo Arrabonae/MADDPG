@@ -1,5 +1,5 @@
 #General
-N_GAMES = 15001
+N_GAMES = 6001
 FIGURE_FILE = 'plots/score.png'
 FIGURE_FILE2 = 'plots/critic_actor_loss.png'
 CHECKPOINT_DIR = 'checkpoint/'

@@ -1,7 +1,7 @@
 # Multi-agent Deep Deterministic Policy Gradient (MADDPG)
 
 
-**Trained Agents**
+**Trained Agents** <br/>
 ![](plots/trained_agents.gif)<br/>
 
 
