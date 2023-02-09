@@ -47,7 +47,8 @@ if __name__ == '__main__':
             if LOAD_CHECKPOINT:
                 env.render()
                 time.sleep(0.4)
-            actions= adv_agent.choose_action(obs,[adv])
+            #actions= adv_agent.choose_action(obs,[adv])
+            actions = {adv: env.action_space(adv).sample()}
             actions.update(agents.choose_action(obs,good))
 
             if actions is not None:

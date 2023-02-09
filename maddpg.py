@@ -50,7 +50,7 @@ class MADDPG:
         """
         print('... loading checkpoint ...')
         for idx, agent in enumerate(self.agents):
-            agent.load_models()
+            agent.load_models(self.actor_shape[idx])
 
     def update_network_parameters(self, tau):
         for agent in self.agents:
@@ -182,12 +182,12 @@ class ActorAgents:
         self.target_actor.save_weights(self.target_actor.checkpoint_file, save_format='h5')
 
 
-    def load_models(self):
+    def load_models(self, actor_shape):
         print('... loading {}  models ...'.format(self.actor.model_name))
-        self.actor.build((BATCH_SIZE, 18))
+        self.actor.build((BATCH_SIZE, actor_shape))
         self.actor.load_weights(self.actor.checkpoint_file)
         print('... loading {}  models ...' .format(self.target_actor.model_name))
-        self.target_actor.build((BATCH_SIZE, 18))
+        self.target_actor.build((BATCH_SIZE, actor_shape))
         self.target_actor.load_weights(self.target_actor.checkpoint_file)
 
 
