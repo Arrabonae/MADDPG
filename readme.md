@@ -1,8 +1,8 @@
 # Multi-agent Deep Deterministic Policy Gradient (MADDPG)
 
 
-**Episode 0**          |  **Episode 6000**
-:--------------------:|:--------------------:
+**Trained Agents**
+![](plots/trained_agents.png)<br/>
 
 
 ## Pettingzoo MPE environment for multi-agent RL
