@@ -27,10 +27,10 @@ More about the MADDPG algorithm: https://arxiv.org/pdf/1706.02275.pdf<br/>
 
 
 ## Network architecture
-![](plots/network.pdf)<br/>
+![](plots/network.png)<br/>
 
 ## Results and benchmarks
-The network was trained for 20000 episodes, and the results are shown below. <br/>
+The network was trained for 6000 episodes, and the results are shown below. <br/>
 ![](plots/MADDPG.png)<br/>
 
 The results are benchmarked to DDPG algorithms on the same environment, same hyperparameter setup and same number of episodes. 
