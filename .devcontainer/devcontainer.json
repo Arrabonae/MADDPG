@@ -19,7 +19,7 @@
 
 	// Use 'postCreateCommand' to run commands after the container is created.
 	"remoteUser": "root",
-	"postCreateCommand": "pip3 install --upgrade pip && apt-get update && apt-get install -y libhdf5-dev && pip3 install --no-binary h5py h5py && pip3 install -r MADDPG/requirements.txt"
+	"postCreateCommand": "pip3 install --upgrade pip && apt-get update && apt-get install -y libhdf5-dev && pip3 install --no-binary h5py h5py && pip3 install -r requirements.txt"
 	
 
 	// Configure tool-specific properties.
