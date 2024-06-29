@@ -1,7 +1,7 @@
 import os
 import tensorflow as tf
-import tensorflow.keras as keras
-from tensorflow.keras.layers import Dense
+import tensorflow.python.keras as keras
+from tensorflow.python.keras.layers import Dense
 from config import *
 
 class CriticNetwork(keras.Model):

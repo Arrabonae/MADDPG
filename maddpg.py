@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
-import tensorflow.keras as keras
-from tensorflow.keras.optimizers import Adam
+import tensorflow.python.keras as keras
+from tensorflow.python.keras.optimizers import Adam
 #locals
 from networks import ActorNetwork, CriticNetwork
 from config import *
