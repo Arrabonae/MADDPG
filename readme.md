@@ -21,7 +21,7 @@ DDPG Adversary action space: [no_action, move_left, move_right, move_down, move_
 DDPG Adversary observation space: [landmark_rel_position, other_agents_rel_positions] <br/>
 
 ## Multi-agent Deep Deterministic Policy Gradient
-MADDPG is a modified version of DDPG algorithm, essentially sharing the critic network between all individual agents in the Team. The main difference therefore, that in DDPG we have an Actor-Critic network pair, while in MADDPG we have a n number of Actor networks (n is the number if agents in the game) and a single Critic network that takes as input the states of all agents and the actions of all agents. <br/>
+MADDPG is a modified version of DDPG algorithm, essentially sharing the critic network between all individual agents in the Team. The main difference therefore, that in DDPG we have an Actor-Critic network pair, while in MADDPG we have a n number of Actor networks (n is the number of agents in the game) and a single Critic network that takes as input the states of all agents and the actions of all agents. <br/>
 The environment is designed in a way that each agent has its own observation space and action space which are not identical, however the Agents have a common (global) goal to achieve therefore they must work together in order to maximise their individual rewards. <br/>
 More about the MADDPG algorithm: https://arxiv.org/pdf/1706.02275.pdf<br/>
 
